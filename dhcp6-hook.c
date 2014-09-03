@@ -219,6 +219,12 @@ static unsigned dhcp6_hook_input_handle(
       printk(":/%u\n",(unsigned int)dpreflen);
     }
     
+    // Case MAP-T Container
+    if(optiontype == DHCPV6_OPT_CONT_MAPT)
+    {
+      printk(KERN_NOTICE "DHCPv6 Hook : Received MAP-T Option.\n");
+    }
+    
     // move pointer to next DHCPv6 option
     current_pos += DHCPV6_OPT_LEN + optionlen;
   }
