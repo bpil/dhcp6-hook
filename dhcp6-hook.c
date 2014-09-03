@@ -132,7 +132,7 @@ struct __attribute__((__packed__)) dhcp6_s46_rule
   __u8 prefix4_len;
   __u32 ipv4_prefix;
   __u8 prefix6_len;
-}
+};
 
 // DHCPv6 S46 DMR Option
 // draft-ietf-softwire-map-dhcp
@@ -140,7 +140,7 @@ struct __attribute__((__packed__)) dhcp6_s46_rule
 struct __attribute__((__packed__)) dhcp6_s46_dmr
 {
   __u8 dmr_prefix_len;
-}
+};
 
 // DHCPv6 S46 Port Params Option
 // draft-ietf-softwire-map-dhcp
@@ -149,7 +149,7 @@ struct __attribute__((__packed__)) dhcp6_s46_ports
   __u8 offset;
   __u8 psid_len;
   __u16 psid;
-}
+};
 
 // Main Hook function
 // Check incoming packets for protocol type, port number, and DHCP options
