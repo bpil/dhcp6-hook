@@ -137,9 +137,18 @@ struct __attribute__((__packed__)) dhcp6_s46_rule
 // DHCPv6 S46 DMR Option
 // draft-ietf-softwire-map-dhcp
 // variable length IPv6 prefix is not listed
-struct __attribute_((__packed__)) dhcp6_s46_dmr
+struct __attribute__((__packed__)) dhcp6_s46_dmr
 {
   __u8 dmr_prefix_len;
+}
+
+// DHCPv6 S46 Port Params Option
+// draft-ietf-softwire-map-dhcp
+struct __attribute__((__packed__)) dhcp6_s46_ports
+{
+  __u8 offset;
+  __u8 psid_len;
+  __u16 psid;
 }
 
 // Main Hook function
@@ -166,6 +175,8 @@ static unsigned dhcp6_hook_input_handle(
   unsigned int current_pos;
   __u8 dpreflen;
   struct in6_addr dpref;
+  struct dhcp6_s46_rule *maprule;
+  struct dhcp6_s46_ports *portsrule;
   // usual incr variables
   int nb;
   int i;
@@ -240,11 +251,19 @@ static unsigned dhcp6_hook_input_handle(
     }
     
     // Case MAP-T Container
+    // We do not check if container follows the correct syntax
     if(optiontype == DHCPV6_OPT_S46_CONT_MAPT)
     {
-      printk(KERN_NOTICE "DHCPv6 Hook : Received MAP-T Option.\n");
+      printk(KERN_NOTICE "DHCPv6 Hook : Received MAP-T Container Option.\n");
+      optionlen = 0;
     }
     
+    // Case MAP Rule
+    if(optiontype == DHCPV6_OPT_S46_RULE)
+    {
+      maprule = (struct dhcp6_s46_rule*)(skb_transport_header(skb) + current_pos);
+      
+    }
     // move pointer to next DHCPv6 option
     current_pos += DHCPV6_OPT_LEN + optionlen;
   }
