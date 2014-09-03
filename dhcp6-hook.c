@@ -122,6 +122,26 @@ struct __attribute__((__packed__)) dhcp6_ia_pd
   struct in6_addr ia_pd_prefix;
 };
 
+// DHCPv6 S46 Rule Option
+// draft-ietf-softwire-map-dhcp
+// variable length IPv6 prefix is not listed
+struct __attribute__((__packed__)) dhcp6_s46_rule
+{
+  __u8 flags;
+  __u8 ea_len;
+  __u8 prefix4_len;
+  __u32 ipv4_prefix;
+  __u8 prefix6_len;
+}
+
+// DHCPv6 S46 DMR Option
+// draft-ietf-softwire-map-dhcp
+// variable length IPv6 prefix is not listed
+struct __attribute_((__packed__)) dhcp6_s46_dmr
+{
+  __u8 dmr_prefix_len;
+}
+
 // Main Hook function
 // Check incoming packets for protocol type, port number, and DHCP options
 static unsigned dhcp6_hook_input_handle( 
