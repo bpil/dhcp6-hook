@@ -21,6 +21,7 @@
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("bpilat");
 
+// Various DHCPv6 opt definitions (from Wide implementation)
 #define DHCPV6_CLIENT_PORT 546
 #define DHCPV6_SERVER_PORT 547
 
@@ -64,16 +65,25 @@ MODULE_AUTHOR("bpilat");
 
 #define DHCPV6_HDR_LEN 4
 #define DHCPV6_OPT_LEN 4
+
+// DHCPv6 Header structure
+// RFC 3315
 struct __attribute__((__packed__)) dhcp6_hdr 
 {
   __u8 message_type;
   __u8 transaction_id[3];
 };
+
+// DHCPv6 Option Header structure
+// RFC 3315
 struct __attribute__((__packed__)) dhcp6_option_hdr
 {
   __u16 option_id;
   __u16 option_length;
 };
+
+// DHCPv6 IA_NA structure
+// RFC 3315
 struct __attribute__((__packed__)) dhcp6_ia_na
 {
   __u32 iaid;
@@ -86,6 +96,8 @@ struct __attribute__((__packed__)) dhcp6_ia_na
   __u32 ia_na_valid_lifetime;
 };
 
+// DHCPv6 IA_PD Prefix Delegation option structure
+// RFC 3633
 struct __attribute__((__packed__)) dhcp6_ia_pd
 {
   __u32 iaid;
@@ -99,6 +111,8 @@ struct __attribute__((__packed__)) dhcp6_ia_pd
   struct in6_addr ia_pd_prefix;
 };
 
+// Main Hook function
+// Check incoming packets for protocol type, port number, and DHCP options
 static unsigned dhcp6_hook_input_handle( 
   const struct nf_hook_ops *ops,
   struct sk_buff *skb,
@@ -121,35 +135,61 @@ static unsigned dhcp6_hook_input_handle(
   unsigned int current_pos;
   __u8 dpreflen;
   struct in6_addr dpref;
-
-// Check proto is IPv6 & extract IPv6 Header if so
+  // usual incr variables
+  int nb;
+  int i;
+  
+  // if Ether Proto is not IPv6, immediatly accept packet & exit
   if (skb->protocol != htons(ETH_P_IPV6)) return NF_ACCEPT;
+  
+  // point ip6 to IPv6 Header
   ip6 = ipv6_hdr(skb);
-  // Check IPv6 proto is 17, UDP & extract UDP Header if so
-  // retrieve usefull sport, dport & datagram length
+  
+  // If IPv6 Next Header field is not 17 (UDP)
+  // immediatly accept packet & exit
   if(ip6->nexthdr != 17) return NF_ACCEPT;
-  printk(KERN_NOTICE "DHCPv6 Hook : Received IPv6 UDP packet.\n");
+  
+  
+  // printk(KERN_NOTICE "DHCPv6 Hook : Received IPv6 UDP packet.\n");
+  
+  // point udph to UDP Header
   udph = (struct udphdr*)skb_transport_header(skb);
+  
+  // Get UDP source and dest ports, and packet length
   source_port=(unsigned int)ntohs(udph->source);
   dest_port=(unsigned int)ntohs(udph->dest);
   udplen=(unsigned int)ntohs(udph->len);
-  printk(KERN_NOTICE "DHCPv6 Hook : Source port is %u, dest port is %u.\n",source_port,dest_port);
+  // printk(KERN_NOTICE "DHCPv6 Hook : Source port is %u, dest port is %u.\n",source_port,dest_port);
+  
+  // If ports are not DHCPv6, immediatly accept packet & exit
   if(source_port != 547) return NF_ACCEPT;
   if(dest_port != 546) return NF_ACCEPT;
-  printk(KERN_NOTICE "DHCPv6 Hook : Packet is DHCPv6 response from server.\n");
+  // printk(KERN_NOTICE "DHCPv6 Hook : Packet is DHCPv6 response from server.\n");
+  
+  // Point dhcp6hdr to DHCPv6 Header (UDP Header length is 8 bytes)
   dhcp6hdr = (struct dhcp6_hdr*)(skb_transport_header(skb) + 8);
+  
+  // If Message is not REPLY, immediatly accept packet & exit
+  // WARNING : Does not cover all RFC3315 cases!
   messagetype = (__u8)dhcp6hdr->message_type;
-  printk(KERN_NOTICE "DHCPv6 Hook : Header start : %x.\n", (unsigned int)&dhcp6hdr);
-  printk(KERN_NOTICE "DHCPv6 Hook : Message type is %u.\n", messagetype);
   if(messagetype != DHCPV6_MSG_REPLY) return NF_ACCEPT;
-  printk(KERN_NOTICE "DHCPv6 Hook : Message is type Reply. Checking options received.\n");
+  
+  printk(KERN_NOTICE "DHCPv6 Hook : DHCPv6 REPLY received.\n");
+  
+  // current_pos is the offset from UDP Header position while scanning the packet
+  // We start just after DHCPv6 Header (UDP Header length is still 8 bytes)
   current_pos = 8 + DHCPV6_HDR_LEN;
+  
   while(current_pos < udplen)
   {
+    // point dhcp6opt to next DHCPv6 Option Header
+    // Get Type and option length
     dhcp6opt = (struct dhcp6_option_hdr*)(skb_transport_header(skb) + current_pos);
     optiontype = (__u16)ntohs(dhcp6opt->option_id);
     optionlen = (__u16)ntohs(dhcp6opt->option_length);
-    printk(KERN_NOTICE "DHCPv6 Hook : Found option %u, length %u.\n",(unsigned int)optiontype, (unsigned int)optionlen);
+
+    // If Prefix Delegation Option, get Prefix and use it
+    // Currently only log the prefix to syslog
     if(optiontype == DHCPV6_OPT_IA_PD)
     {
       printk(KERN_NOTICE "DHCPv6 Hook : Treating Prefix delegation option separatly from DHCPv6 client.\n");
@@ -157,8 +197,8 @@ static unsigned dhcp6_hook_input_handle(
       dpreflen = (__u8)dhcp6iapd->ia_pd_prefix_length;
       dpref = (struct in6_addr)dhcp6iapd->ia_pd_prefix;
       printk(KERN_NOTICE "DHCPv6 Hook : Delegated Prefix length is %u.\n", (unsigned int)dpreflen);
-      int nb = dpreflen / 8;
-      int i = 0;
+      nb = dpreflen / 8;
+      i = 0;
       printk(KERN_NOTICE "DHCPv6 Hook : Prefix is ");
       while(i<nb)
       {
@@ -167,14 +207,16 @@ static unsigned dhcp6_hook_input_handle(
       }
       printk(":/%u\n",(unsigned int)dpreflen);
     }
+    
+    // move pointer to next DHCPv6 option
     current_pos += DHCPV6_OPT_LEN + optionlen;
   }
-  printk(KERN_NOTICE "DHCPv6 Hook : End of option list.\n");
   return NF_ACCEPT;
 }
 
 static struct nf_hook_ops dhcp6_hook_ops;
 
+// Register hook function to NF 
 static int __init dhcp6_hook_init(void) 
 {
   int err = 0;
@@ -189,7 +231,7 @@ static int __init dhcp6_hook_init(void)
   return 0;
 }
   
-
+// Unregister hook function
 static void __exit dhcp6_hook_end(void)
 {
   nf_unregister_hook(&dhcp6_hook_ops);
