@@ -60,6 +60,17 @@ MODULE_AUTHOR("bpilat");
 #define DHCPV6_OPT_SOL_MAX_RT 82
 #define DHCPV6_OPT_INF_MAX_RT 83
 
+// IANA newly defined \o/
+// draft-softwire-map-dhcp
+#define DHCPV6_OPT_S46_RULE 89
+#define DHCPV6_OPT_S46_BR 90
+#define DHCPV6_OPT_S46_DMR 91
+#define DHCPV6_OPT_S46_V4V6BIND 92
+#define DHCPV6_OPT_S46_PORTPARAMS 93
+#define DHCPV6_OPT_S46_CONT_MAPE 94
+#define DHCPV6_OPT_S46_CONT_MAPT 95
+#define DHCPV6_OPT_S46_CONT_LW 96
+
 #define DHCPV6_ENT_NO 30462
 #define DHCPV6_ENT_TYPE 1
 
