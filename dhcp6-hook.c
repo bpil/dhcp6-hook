@@ -220,7 +220,7 @@ static unsigned dhcp6_hook_input_handle(
     }
     
     // Case MAP-T Container
-    if(optiontype == DHCPV6_OPT_CONT_MAPT)
+    if(optiontype == DHCPV6_OPT_S46_CONT_MAPT)
     {
       printk(KERN_NOTICE "DHCPv6 Hook : Received MAP-T Option.\n");
     }
