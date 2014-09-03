@@ -177,6 +177,10 @@ static unsigned dhcp6_hook_input_handle(
   struct in6_addr dpref;
   struct dhcp6_s46_rule *maprule;
   struct dhcp6_s46_ports *portsrule;
+  __u32 ruleipv4prefix;
+  __u8 ruleipv4prefixlen;
+  __u8 ruleipv6prefixlen;
+  struct in6_addr ruleipv6prefix;
   // usual incr variables
   int nb;
   int i;
@@ -262,7 +266,10 @@ static unsigned dhcp6_hook_input_handle(
     if(optiontype == DHCPV6_OPT_S46_RULE)
     {
       maprule = (struct dhcp6_s46_rule*)(skb_transport_header(skb) + current_pos);
-      
+      ruleipv4prefix = maprule->ipv4_prefix;
+      ruleipv4prefixlen = maprule->prefix4_len;
+      ruleipv6prefixlen = maprule->prefix6_len;
+      ruleipv6prefix = (in6_addr)&(maprule + 6);
     }
     // move pointer to next DHCPv6 option
     current_pos += DHCPV6_OPT_LEN + optionlen;
