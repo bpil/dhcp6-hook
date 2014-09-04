@@ -180,7 +180,7 @@ static unsigned dhcp6_hook_input_handle(
   __u32 ruleipv4prefix;
   __u8 ruleipv4prefixlen;
   __u8 ruleipv6prefixlen;
-  struct in6_addr ruleipv6prefix;
+  struct in6_addr* ruleipv6prefix = kmalloc(sizeof *ruleipv6prefix, GFP_KERNEL);
   // usual incr variables
   int nb;
   int i;
@@ -269,7 +269,8 @@ static unsigned dhcp6_hook_input_handle(
       ruleipv4prefix = maprule->ipv4_prefix;
       ruleipv4prefixlen = maprule->prefix4_len;
       ruleipv6prefixlen = maprule->prefix6_len;
-      ruleipv6prefix = (in6_addr)&(maprule + 6);
+      //ruleipv6prefix = (struct in6_addr) &maprule;
+      memcpy(ruleipv6prefix, (maprule + 6), (ruleipv6prefixlen / 8));
     }
     // move pointer to next DHCPv6 option
     current_pos += DHCPV6_OPT_LEN + optionlen;
