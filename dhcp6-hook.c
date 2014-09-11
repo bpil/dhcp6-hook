@@ -77,6 +77,10 @@ MODULE_AUTHOR("bpilat");
 #define DHCPV6_HDR_LEN 4
 #define DHCPV6_OPT_LEN 4
 
+// Crude Ceil macro
+// No access to math.h (module)
+#define CEILING(X) (X-(int)(X) > 0 ? (int)(X+1) : (int)(X))
+
 // DHCPv6 Header structure
 // RFC 3315
 struct __attribute__((__packed__)) dhcp6_hdr 
@@ -270,7 +274,7 @@ static unsigned dhcp6_hook_input_handle(
       ruleipv4prefixlen = maprule->prefix4_len;
       ruleipv6prefixlen = maprule->prefix6_len;
       //ruleipv6prefix = (struct in6_addr) &maprule;
-      memcpy(ruleipv6prefix, (maprule + 6), (ruleipv6prefixlen / 8));
+      memcpy(ruleipv6prefix, (maprule + 6), CEILING(ruleipv6prefixlen / 8));
     }
     // move pointer to next DHCPv6 option
     current_pos += DHCPV6_OPT_LEN + optionlen;
